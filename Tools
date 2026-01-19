@@ -1,0 +1,21 @@
+Configure tools via manage jenkins--
+Global system configurations-
+Maven configuration- Add name and version and use the same name in the jenkins pipeline
+JDK Configuration- Add name and home path of the jdk--jdk 17 is old version so install jdk21 
+*
+*
+*
+*
+ubuntu@ip-172-31-17-80:~$ sudo update-alternatives --config java
+There are 2 choices for the alternative java (providing /usr/bin/java).
+
+  Selection    Path                                         Priority   Status
+------------------------------------------------------------
+  0            /usr/lib/jvm/java-17-openjdk-amd64/bin/java   1711      auto mode
+  1            /usr/lib/jvm/java-17-openjdk-amd64/bin/java   1711      manual mode
+* 2            /usr/lib/jvm/java-21-openjdk-amd64/bin/java   1         manual mode-------> copy this---/usr/lib/jvm/java-21-openjdk-amd64(Home path of jdk21)
+
+Press <enter> to keep the current choice[*], or type selection number: 2
+ubuntu@ip-172-31-17-80:~$ ^C
+
+
