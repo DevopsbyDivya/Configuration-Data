@@ -3,3 +3,8 @@
 -->Sonarqube
 -->Pipeline maven integration plugin
 -->Build Timestamp
+-->Nexus Artifact UploaderVersion 2.15
+-->SonarQube ScannerVersion-2.18.2
+-->Build TimestampVersion-1.1.1
+-->Pipeline Maven IntegrationVersion-1611.v6a_00c04177b_b_
+-->Pipeline Utility StepsVersion-2.20.0
