@@ -1,0 +1,173 @@
+
+🚀 Docker Integration – Build & Push Docker Images (ECR) via Jenkins Pipeline
+This section walks you through integrating Docker image build + push into your Jenkins CI pipeline. Instead of publishing a WAR file, the pipeline now publishes fully packaged Docker images.
+
+
+🧩 Why Docker Integration?
+Modern applications ship as containers instead of raw artifacts. Docker integration allows your CI pipeline to:
+
+Build a Docker image from source
+Package your application + dependencies into a portable container
+Push images to a container registry (AWS ECR, DockerHub, GCR, ACR, Nexus, etc.)
+Later deploy images to orchestration platforms (ECS, Kubernetes, etc.)
+In this guide, we use Amazon ECR (Elastic Container Registry). The same flow applies to any registry with minor login changes.
+
+
+🔧 Step 1 — Install Required Packages on Jenkins
+Docker commands run on Jenkins → so install Docker Engine.
+1️⃣ Install Docker Engine
+SSH into Jenkins and run:
+sudo apt update
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+
+
+
+2️⃣ Add Jenkins User to Docker Group
+sudo usermod -aG docker jenkins
+sudo reboot
+
+
+
+This allows Jenkins jobs to run Docker commands.
+3️⃣ Install AWS CLI (for later ECS deployments)
+sudo snap install aws-cli --classic
+
+
+
+
+
+� Step 32 — InstallJenkins Plugins
+Go to Manage Jenkins → Plugins → Available and install:
+
+Docker Pipeline
+Docker
+Amazon ECR
+AWS SDK
+These allow Jenkins to authenticate with AWS and push images to ECR.
+
+
+🔐 Step 3 — Store AWS Credentials in Jenkins
+You need an IAM user with permissions:
+
+AmazonEC2ContainerRegistryFullAccess
+AmazonECSFullAccess (used later for deployments)
+Create IAM User in AWS
+
+Go to IAM → Users → Create User
+Add policies:AmazonEC2ContainerRegistryFullAccess
+AmazonECSFullAccess
+Create Access Key + Secret Key
+Download CSV
+Store Credentials in Jenkins
+Manage Jenkins → Credentials → Global → Add Credentials
+
+Kind: AWS Credentials
+ID: awscreds
+Enter Access Key + Secret Key
+
+
+🏗 Step 4 — Create ECR Repository
+Go to AWS Console → ECR → Create Repository
+
+Repository name: vprofileappimg
+Copy the URI (used in Jenkinsfile)
+Example:
+123456789012.dkr.ecr.us-east-1.amazonaws.com/vprofileappimg
+
+
+
+
+
+📁 Step 5 — Prepare Source Code with Dockerfile
+In your Git repository → branch docker:
+/docker-files/app/multistage/Dockerfile
+
+
+
+Example Dockerfile (multi‑stage):
+
+Build WAR using Maven
+Copy WAR into a Tomcat base image
+This produces a final Docker image ready for deployment.
+
+
+🛠 Step 6 — Jenkins Pipeline Stages for Docker Build & Push
+Add these variables at the top of your pipeline:
+environment {
+    registryCredentials = 'awscreds'
+    vprofileRegistry = '123456789012.dkr.ecr.us-east-1.amazonaws.com'
+    imageName = '123456789012.dkr.ecr.us-east-1.amazonaws.com/vprofileappimg'
+}
+
+
+
+Replace account + region with your values.
+
+
+🔨 Stage 1 — Build Docker Image
+stage('Build Docker Image') {
+    steps {
+        script {
+            dockerImage = docker.build("${imageName}:${env.BUILD_ID}", "./docker-files/app/multistage")
+        }
+    }
+}
+
+
+
+
+
+📤 Stage 2 — Push Docker Image to ECR
+stage('Push Docker Image') {
+    steps {
+        script {
+            docker.withRegistry("https://${vprofileRegistry}", registryCredentials) {
+                dockerImage.push(env.BUILD_ID)
+                dockerImage.push('latest')
+            }
+        }
+    }
+}
+
+
+
+
+Pushes two tags:BUILD_ID → versioned image
+latest → default tag
+-
+
+
+
+🧹 Step 3 — Remove Local Docker Images (Free Space)
+stage('Clean Docker Images') {
+    steps {
+        sh '''
+            docker rmi -f $(docker images -aq) || true
+        '''
+    }
+}
+
+
+
+Prevents Jenkins server from filling disk space.
+
+
+🧪 Step 7 — Verify in ECR
+Go to AWS → ECR → vprofileappimg → Images You should now see tags like:
+1
+2
+3
+latest
+
+
+
+Each corresponds to a Jenkins pipeline execution.
+
+
+📚 Useful References
+
+Docker Pipeline Plugin Docs
+AWS ECR User Guide
+Jenkins + Docker Official Documentation
+Multi‑stage Dockerfile Patterns
