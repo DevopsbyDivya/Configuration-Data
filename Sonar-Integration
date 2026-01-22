@@ -1,1 +1,125 @@
---> Sonar Integration steps
+
+🚀 SonarQube Integration – Step‑by‑Step Guide
+This section helps you integrate SonarQube Code Analysis into your Jenkins Pipeline as taught in the lecture.
+
+
+🔧 Step 1 — Install & Configure SonarQube Scanner in Jenkins
+✅ 1. Add the SonarQube Scanner Tool
+
+Go to Manage Jenkins → Tools
+Scroll to SonarQube Scanner Installation
+Click Add SonarQube Scanner
+Choose version: SonarQube Scanner 6.2.14610
+Name it exactly: sonar6.2
+Save
+
+
+✅ 2. Add SonarQube Server Details
+
+Go to Manage Jenkins → System
+Scroll to SonarQube Servers
+Check Environment variables
+Click Add SonarQube
+Name: SonarServer
+URL format:
+http://<SONAR_PRIVATE_IP>:80
+
+
+
+
+Generate a User Token from SonarQube:Click profile → My Account → Security → Generate Token
+Store token in Jenkins as Secret Text credential
+Select this token under the Sonar server settings
+Save
+✔ Ensure SonarQube SG allows port 80 from Jenkins SG.
+
+
+🧪 Step 2 — Add Checkstyle Analysis Stage
+Before Sonar, we run Checkstyle using Maven.
+stage('Checkstyle Analysis') {
+    steps {
+        sh 'mvn checkstyle:checkstyle'
+    }
+}
+
+
+
+This produces checkstyle-result.xml inside target/.
+
+
+🛰 Step 3 — Add SonarQube Code Analysis Stage
+Full Stage:
+stage('Sonar Code Analysis') {
+    environment {
+        scannerHome = tool 'sonar6.2'
+    }
+    steps {
+        sh """
+        ${scannerHome}/bin/sonar-scanner \
+        -Dsonar.projectKey=vprofile \
+        -Dsonar.projectName=vprofile \
+        -Dsonar.projectVersion=1.0 \
+        -Dsonar.sources=./src \
+        -Dsonar.junit.reportsPath=target/surefire-reports \
+        -Dsonar.jacoco.reportsPath=target/jacoco.exec \
+        -Dsonar.checkstyle.reportPaths=target/checkstyle-result.xml
+        """
+    }
+}
+
+
+
+
+
+🚦 Step 4 — Configure Quality Gates in SonarQube
+1. Create Custom Quality Gate
+
+Go to SonarQube → Quality Gates → Create
+Name: vprofile-QG
+Click Unlock editing
+Add Condition:Metric: Bugs
+Operator: >
+Value: 10
+2. Assign Quality Gate to Project
+
+Open project: vprofile
+Go to Project Settings → Quality Gate
+Select: vprofile-QG
+
+
+🔗 Step 5 — Create Webhook for Quality Gate Result
+SonarQube must notify Jenkins.
+Create Webhook:
+
+Go to Project → Project Settings → Webhooks
+Name: Jenkins-ci-webhook
+URL format:
+http://<JENKINS_PRIVATE_IP>:8080/sonarqube-webhook
+
+
+
+✔ Ensure Jenkins SG allows port 8080 from SonarQube SG.
+
+
+🧩 Step 6 — Add Quality Gate Check Stage
+stage('Quality Gate') {
+    steps {
+        timeout(time: 1, unit: 'MINUTES') {
+            waitForQualityGate abortPipeline: true
+        }
+    }
+}
+
+
+
+
+
+📚 Useful References
+
+Jenkins Pipeline Syntax Docs: https://www.jenkins.io/doc/book/pipeline/
+SonarQube Scanner for Jenkins Docs
+SonarQube Webhooks Guide
+Jenkins Pipeline Syntax Docs: https://www.jenkins.io/doc/book/pipeline/
+Git Plugin Pipeline Examples
+Maven Pipeline Docs
+
