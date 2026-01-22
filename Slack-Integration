@@ -1,0 +1,122 @@
+
+🚀 Slack Notification Integration – Step‑by‑Step Guide
+This section explains how to integrate Slack Notifications into your Jenkins Pipeline so you get alerts when a build succeeds or fails.
+
+
+🔔 Why Slack Notifications?
+Slack helps teams collaborate quickly. Integrating Jenkins with Slack gives you:
+
+Instant alerts on build success or failure
+Direct links to console logs
+Color‑coded visual statuses (green = success, red = failure)
+
+
+🔧 Step 1 — Install Slack Notification Plugin in Jenkins
+
+Go to Manage Jenkins → Plugins → Available Plugins
+Search: Slack Notification
+Install and restart Jenkins
+
+
+� Step 2 — Create a Slack Workspace & Channel
+
+Go to: https://slack.com
+Sign up or log in
+Create a Workspace (example: hkhinfotechworkspace)
+Create a Channel (example: #devopscicd)
+
+
+🔑 Step 3 — Add Jenkins App to Slack (Generate Token)
+
+Visit Slack Apps Marketplace: https://slack.com/apps
+Search for Jenkins CI
+Click Add to Slack
+Choose your channel (e.g., devopscicd)
+Slack generates a token → copy it
+Save settings
+Example token (DO NOT SHARE in real projects):
+xoxp-12345-abcde-jenkins-token-sample
+
+
+
+
+
+
+
+� Step 4 — Configure Slack in Jenkins
+
+Go to Manage Jenkins → System
+Scroll to Slack configuration
+Fill in:
+
+Workspace → your Slack workspace name
+Channel → #devopscicd
+
+Add your Slack token:
+
+Click Add → Jenkins Credentials → Secret text
+ID: slacktoken
+
+Select this credential in Slack config
+Click Test Connection → should show Success
+
+
+🧩 Step 5 — Add Slack Notification to Pipeline
+Slack notification goes in the post section (outside stages).
+Add this function at the TOP of the Jenkinsfile:
+def COLOR_MAP(result) {
+    if (result == 'SUCCESS') {
+        return 'good'
+    } else {
+        return 'danger'
+    }
+}
+
+
+
+Add this post block at the END of your pipeline:
+post {
+    always {
+        echo 'Slack Notification'
+        slackSend(
+            channel: '#devopscicd',
+            color: COLOR_MAP(currentBuild.currentResult),
+            message: "${currentBuild.currentResult}: Job ${env.JOB_NAME} Build #${env.BUILD_NUMBER}"
+        )
+    }
+}
+
+
+
+What this does:
+
+Sends a message on every build (success or failure)
+Uses green for success, red for failure
+Includes job name + build number
+
+
+🧪 Step 6 — Test Slack Notifications
+1. Run a Successful Build
+You should receive a green success message:
+SUCCESS: Job vprofile-CI-Pipeline Build #21
+
+
+
+2. Force a Failure
+Add a failing command:
+stage('Test Slack') {
+    steps {
+        sh 'NotARealCommand'
+    }
+}
+
+
+
+You will receive a red failure notification in Slack.
+
+
+📚 Useful References
+
+Slack Notification Plugin Docs
+Jenkins Pipeline Steps Reference
+Slack Jenkins CI App Documentation
