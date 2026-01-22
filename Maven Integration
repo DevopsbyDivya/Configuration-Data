@@ -1,0 +1,139 @@
+
+🚀 Jenkins Pipeline (Jenkinsfile) – Step‑by‑Step Tutorial
+A simple and clear guide to help you create a Jenkins Declarative Pipeline without revisiting the video repeatedly.
+
+
+📌 What is Pipeline-as-Code?
+Pipeline-as-Code means defining your CI/CD workflow inside a file named Jenkinsfile (capital J). This file:
+
+Lives inside your source code repository
+Uses a Groovy‑like DSL (Declarative preferred over Scripted)
+Defines stages such as build, test, deploy, etc.
+
+
+📁 Basic Structure of a Declarative Jenkinsfile
+pipeline {
+    agent any
+
+
+
+tools { // Example: // maven "MAVEN_VERSION" // jdk "JDK_VERSION" }
+environment { // Environment variables }
+stages { stage('Example Stage') { steps { // Commands or plugins } } }
+post { // Actions: success, failure, always } }
+
+
+
+
+
+🛠 Create a Simple Build Pipeline (Jenkinsfile)
+Follow these steps to create your first Jenkins Pipeline.
+
+
+1️⃣ Create a New Jenkinsfile
+
+Open VS Code or your preferred editor
+Create a new file named Jenkinsfile
+Install the Jenkinsfile or Groovy extension for highlighting
+
+
+2️⃣ Start the Pipeline Block
+pipeline {
+    agent any
+
+
+
+
+pipeline {} = main wrapper
+agent any = run on any Jenkins agent
+
+
+
+3️⃣ Add the Tools Section
+These must match the names configured in Jenkins → Global Tool Configuration.
+tools {
+    maven "MAVEN_3.9"
+    jdk "JDK17"
+}
+
+
+
+
+
+4️⃣ Add Stages
+Your CI/CD workflow logic lives inside stages.
+🟦 Stage 1: Fetch Code
+stages {
+    stage('Fetch Code') {
+        steps {
+            git branch: 'atom',
+                url: 'https://github.com/HKHcoder/vprofile.git'
+        }
+    }
+
+
+
+🟩 Stage 2: Run Unit Tests
+stage('Unit Test') {
+    steps {
+        sh 'mvn test'
+    }
+}
+
+
+
+🟧 Stage 3: Build Package
+stage('Build') {
+    steps {
+        sh 'mvn install -DskipTests'
+    }
+    post {
+        success {
+            echo 'Archiving artifact...'
+            archiveArtifacts artifacts: '**/*.war'
+        }
+    }
+}
+
+
+
+Close the pipeline block:
+}
+
+
+
+
+
+✔️ Final Jenkinsfile (Copy‑Paste Ready)
+pipeline {
+    agent any
+
+
+
+tools { maven "MAVEN_3.9" jdk "JDK17" }
+stages {
+stage('Fetch Code') { steps { git branch: 'atom', url: 'https://github.com/HKHcoder/vprofile.git' } }
+stage('Unit Test') { steps { sh 'mvn test' } }
+stage('Build') { steps { sh 'mvn install -DskipTests' } post { success { echo 'Archiving artifact' archiveArtifacts artifacts: '**/*.war' } } } } }
+
+
+
+
+
+🚀 How to Run This Pipeline in Jenkins
+
+Go to Jenkins Dashboard → New Item
+Select Pipeline job type
+Scroll to the Pipeline section
+Choose one:Pipeline Script → paste the Jenkinsfile
+Pipeline Script from SCM → point Jenkins to your repo
+Click Save
+Click Build Now
+View logs per stage in the Jenkins UI
+
+
+📚 Useful References
+
+Jenkins Pipeline Syntax Docs: https://www.jenkins.io/doc/book/pipeline/
+Git Plugin Pipeline Examples
+Maven Pipeline Docs
