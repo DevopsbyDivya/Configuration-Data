@@ -1,0 +1,146 @@
+
+🚀 Nexus Repository Integration – Step‑by‑Step Guide
+This section explains how to integrate Nexus Sonatype Repository with Jenkins Pipeline to store versioned build artifacts.
+
+
+🏗 Why Nexus Repository?
+Nexus is a software repository manager used to:
+
+Store build artifacts (WAR, JAR, ZIP, etc.)
+Store package formats (Maven, APT, Npm, Yum, Docker, NuGet)
+Retrieve dependencies for builds
+In our pipeline, we use Nexus as a central artifact store.
+
+
+🔧 Step 1 — Set Up Nexus Repository
+1️⃣ Login to Nexus
+
+Access Nexus via: http://<NEXUS_PUBLIC_IP>:8081
+Login with admin credentials (set during installation)
+2️⃣ Create Maven Hosted Repository
+
+Go to Settings → Repositories
+Click Create repository
+Choose Maven (hosted)
+Name it:
+vprofile-repo
+
+
+
+
+Click Create repository
+✔ This repository will store all WAR artifacts uploaded from Jenkins.
+
+
+🔐 Step 2 — Add Nexus Credentials in Jenkins
+You must add Nexus login details for Jenkins to upload the artifact.
+Steps:
+
+Go to Jenkins Dashboard → Manage Jenkins
+Click Credentials → System → Global Credentials
+Click Add Credentials
+Choose Username with password
+Enter:Username: admin
+Password: <YOUR_NEXUS_PASSWORD>
+ID: nexuslogin
+Description: nexuslogin
+Save
+✔ Use this credential ID inside the pipeline.
+
+
+� Step 23— Add Nexus Upload Stage to the Pipeline
+Below is the complete Nexus upload stage using the Nexus Artifact Uploader plugin.
+📌 Pipeline Stage
+stage('Upload Artifact to Nexus') {
+    steps {
+        nexusArtifactUploader(
+            nexusVersion: 'nexus3',
+            protocol: 'http',
+            nexusUrl: '<NEXUS_PRIVATE_IP>:8081',
+            groupId: 'QA',
+            version: "${env.BUILD_ID}-${env.BUILD_TIMESTAMP}",
+            repository: 'vprofile-repo',
+            credentialsId: 'nexuslogin',
+            artifacts: [
+                [
+                    artifactId: 'vpro-app',
+                    classifier: '',
+                    file: 'target/vprofile-v2.war',
+                    type: 'war'
+                ]
+            ]
+        )
+    }
+}
+
+
+
+💡 Notes:
+
+env.BUILD_ID → Jenkins build number
+env.BUILD_TIMESTAMP → Requires Build Timestamp Plugin enabled
+file: → Path to generated WAR file in the workspace
+repository: → Must match the repository name created in Nexus
+
+
+⏳ Step 4 — Enable Build Timestamp (Required for Versioning)
+
+Go to Manage Jenkins → Configure System
+Find Build Timestamp
+Enable it
+Set pattern:
+
+
+
+yyMMdd_HH-mm
+
+
+
+
+Save
+✔ This ensures every upload produces a unique version in Nexus.
+
+
+� Step 5 — Run the Pipeline & Verify Artifacts
+After running your Jenkins pipeline:
+
+Go to Nexus → Browse
+Open repository: vprofile-repo
+You should see folders like:
+45-240122_10-30/
+   46-240122_10-45/
+   47-240122_11-00/
+
+
+
+
+Inside each folder:
+vpro-app-<buildid>-<timestamp>.war
+
+
+
+Every pipeline run generates a new versioned artifact.
+
+
+🆗 Troubleshooting
+❗ Job stuck on “Waiting for next available executor”
+Cause: Jenkins node out of disk space.
+Fix:
+cd /var/lib/jenkins/workspace
+rm -rf *
+systemctl restart jenkins
+
+
+
+❗ Upload fails — Could not transfer artifact
+
+Check private IP of Nexus
+Confirm port 8081 is open between Jenkins and Nexus
+Ensure correct repository name
+
+
+📚 Useful References
+
+Nexus Artifact Uploader Plugin Docs
+Jenkins Pipeline Syntax Docs: https://www.jenkins.io/doc/book/pipeline/
+Nexus Repository Manager Docs
