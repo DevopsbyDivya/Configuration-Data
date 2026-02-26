@@ -41,7 +41,8 @@ sudo snap install aws-cli --classic
 Go to Manage Jenkins → Plugins → Available and install:
 
 Docker Pipeline
-Docker
+cloudbees Docker build & publish
+docker
 Amazon ECR
 AWS SDK
 These allow Jenkins to authenticate with AWS and push images to ECR.
